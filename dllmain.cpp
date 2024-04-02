@@ -18,7 +18,7 @@ struct g_ctx
     std::atomic_bool running;
     HANDLE hUnloadEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Signal to unload
     HANDLE hUnloadEventAck = CreateEvent(NULL, TRUE, FALSE, NULL);
-	HMODULE hModule;
+    HMODULE hModule;
     void* vftable_SteamNetConnectionStatusChanged;
     std::vector<unsigned long long> banned_steamids = {};
 } Context;
@@ -42,7 +42,7 @@ decltype(&onSteamNetConnectionStatusChanged) oSteamNetConnectionStatusChanged;
 
 bool IsBannedSteamID(const std::uint64_t steamid)
 {
-	return std::find(Context.banned_steamids.begin(), Context.banned_steamids.end(), steamid) != Context.banned_steamids.end();
+    return std::find(Context.banned_steamids.begin(), Context.banned_steamids.end(), steamid) != Context.banned_steamids.end();
 }
 
 void onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNetConnectionStatusChangedCallback_t* pParam)
@@ -52,70 +52,70 @@ void onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNetConnectionSt
     {
         if (pParam->m_info.m_eState == k_ESteamNetworkingConnectionState_Connecting)
         {
-			DebugOutL(std::format(TEXT("Banned SteamID tried to join: {}"), connectionSteamID));
-			SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, "You are banned!", false);
-		}
+            DebugOutL(std::format(TEXT("Banned SteamID tried to join: {}"), connectionSteamID));
+            SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, "You are banned!", false);
+        }
         return;
     }
-	
+
     return oSteamNetConnectionStatusChanged(self, pParam);
 }
 
 void UpdateBanList()
 {
-	// Make or open steamid ban list in the same directory as the process
-	std::filesystem::path path = std::filesystem::current_path() / "steam_bans.txt";
-	
-	// Create the file if it doesn't exist
+    // Make or open steamid ban list in the same directory as the process
+    std::filesystem::path path = std::filesystem::current_path() / "steam_bans.txt";
+
+    // Create the file if it doesn't exist
     if (!std::filesystem::exists(path))
     {
-		std::ofstream file(path);
+        std::ofstream file(path);
         file << "# Put your banned steamids here\n";
         file << "# Each steamid should be on a new line\n";
         file << "# For example:\n";
         file << "76561199531536640 # TheGuy920's crash bot\n";
-		file.close();
-	}
+        file.close();
+    }
 
     Context.banned_steamids.clear();
     DebugOutL("Fetching banned users from steam_bans.txt...");
 
-	// Each steamid should be on a new line
-	std::ifstream file(path);
-	std::string line;
+    // Each steamid should be on a new line
+    std::ifstream file(path);
+    std::string line;
     while (std::getline(file, line))
     {
         if (line.size() < 17)
-			continue;
-        
+            continue;
+
         // Ensure 17 numerical digits
         if (!std::all_of(line.begin(), line.begin() + 17, ::isdigit))
             continue;
 
-		// Convert the string to a steamid
+        // Convert the string to a steamid
         const std::uint64_t steamid64 = std::stoull(line);
 
         DebugOutL("Added SteamID to banned list: ", steamid64);
-		
-		Context.banned_steamids.push_back(steamid64);
-	}
-	file.close();
+
+        Context.banned_steamids.push_back(steamid64);
+    }
+    file.close();
 }
 
 void SetupChangeNotifications()
 {
     HANDLE hNotification = FindFirstChangeNotification(
-		std::filesystem::current_path().c_str(),
-		FALSE,
-		FILE_NOTIFY_CHANGE_LAST_WRITE
-	);
+        std::filesystem::current_path().c_str(),
+        FALSE,
+        FILE_NOTIFY_CHANGE_LAST_WRITE
+    );
 
     if (hNotification == INVALID_HANDLE_VALUE)
     {
-		MessageBox(NULL, TEXT("Could not setup change notifications!"), TEXT("Error"), MB_OK | MB_ICONERROR);
-		FreeLibraryAndExitThread(Context.hModule, NULL);
-		return;
-	}
+        MessageBox(NULL, TEXT("Could not setup change notifications!"), TEXT("Error"), MB_OK | MB_ICONERROR);
+        FreeLibraryAndExitThread(Context.hModule, NULL);
+        return;
+    }
 
     std::filesystem::file_time_type last_write_time_old = std::filesystem::last_write_time(std::filesystem::current_path() / "steam_bans.txt");
 
@@ -123,19 +123,19 @@ void SetupChangeNotifications()
     {
         if (WaitForMultipleObjects(2, new HANDLE[2]{ hNotification, Context.hUnloadEvent }, FALSE, INFINITE) == WAIT_OBJECT_0)
         {
-			// Check if steamid ban list has been updated
+            // Check if steamid ban list has been updated
             std::filesystem::file_time_type last_write_time = std::filesystem::last_write_time(std::filesystem::current_path() / "steam_bans.txt");
             if (last_write_time != last_write_time_old)
             {
-				UpdateBanList();
-				last_write_time_old = last_write_time;
-			}
+                UpdateBanList();
+                last_write_time_old = last_write_time;
+            }
         }
         else
         {
             break;
         }
-	}
+    }
 
     FindCloseChangeNotification(hNotification);
     SetEvent(Context.hUnloadEventAck);
@@ -144,8 +144,8 @@ void SetupChangeNotifications()
 
 std::uint64_t FollowJMP(std::uintptr_t address)
 {
-	const std::int32_t offset = *reinterpret_cast<std::int32_t*>(address + 1);
-	return address + 5 + offset;
+    const std::int32_t offset = *reinterpret_cast<std::int32_t*>(address + 1);
+    return address + 5 + offset;
 }
 
 using fGetCallbackMap = std::map<std::uint32_t, void*>* (__cdecl*)();
@@ -166,10 +166,10 @@ void Main(HMODULE hModule)
     // Wait until steam is running
     while (!hSteam && Context.running)
     {
-		hSteam = GetModuleHandle(TEXT("steam_api64.dll"));
+        hSteam = GetModuleHandle(TEXT("steam_api64.dll"));
         DebugOutL("Waiting for steam_api64.dll...");
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
     FARPROC pUnregisterCallResult = GetProcAddressEx(hSteam, "SteamAPI_UnregisterCallResult");
     std::uint64_t func = FollowJMP((std::uintptr_t)pUnregisterCallResult);
@@ -198,12 +198,12 @@ void Main(HMODULE hModule)
         oSteamNetConnectionStatusChanged = (decltype(oSteamNetConnectionStatusChanged))vftable[vftable_index];
         vftable[vftable_index] = (void*)onSteamNetConnectionStatusChanged;
         VirtualProtect(&vftable[vftable_index], sizeof(void*), oldProtect, &oldProtect);
-	}
+    }
     else
     {
         DebugOutL(TEXT("Could not find SteamNetConnectionStatusChangedCallback_t!"));
-		FreeLibraryAndExitThread(hModule, NULL);
-		return;
+        FreeLibraryAndExitThread(hModule, NULL);
+        return;
     }
     DebugOutL("Loaded successfully!");
     DebugOutL(std::format(TEXT("Put your banned steamids in {}"), (std::filesystem::current_path() / "steam_bans.txt").c_str()));
@@ -211,9 +211,9 @@ void Main(HMODULE hModule)
 }
 
 BOOL APIENTRY DllMain
-( HMODULE hModule,
-  DWORD  ul_reason_for_call,
-  LPVOID lpReserved
+(HMODULE hModule,
+    DWORD  ul_reason_for_call,
+    LPVOID lpReserved
 )
 {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
@@ -228,11 +228,11 @@ BOOL APIENTRY DllMain
 
         if (Context.vftable_SteamNetConnectionStatusChanged && oSteamNetConnectionStatusChanged)
         {
-			DWORD oldProtect;
-			VirtualProtect(Context.vftable_SteamNetConnectionStatusChanged, sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-			*(void**)Context.vftable_SteamNetConnectionStatusChanged = oSteamNetConnectionStatusChanged;
-			VirtualProtect(Context.vftable_SteamNetConnectionStatusChanged, sizeof(void*), oldProtect, &oldProtect);
-		}
+            DWORD oldProtect;
+            VirtualProtect(Context.vftable_SteamNetConnectionStatusChanged, sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+            *(void**)Context.vftable_SteamNetConnectionStatusChanged = oSteamNetConnectionStatusChanged;
+            VirtualProtect(Context.vftable_SteamNetConnectionStatusChanged, sizeof(void*), oldProtect, &oldProtect);
+        }
 
         DebugOutL("Unloaded!");
     }
