@@ -118,10 +118,11 @@ void SetupChangeNotifications()
     }
 
     std::filesystem::file_time_type last_write_time_old = std::filesystem::last_write_time(std::filesystem::current_path() / "steam_bans.txt");
+    HANDLE handles[2] = { hNotification, Context.hUnloadEvent };
 
     while (Context.running)
     {
-        if (WaitForMultipleObjects(2, new HANDLE[2]{ hNotification, Context.hUnloadEvent }, FALSE, INFINITE) == WAIT_OBJECT_0)
+        if (WaitForMultipleObjects(2, handles, FALSE, INFINITE) == WAIT_OBJECT_0)
         {
             // Check if steamid ban list has been updated
             std::filesystem::file_time_type last_write_time = std::filesystem::last_write_time(std::filesystem::current_path() / "steam_bans.txt");
