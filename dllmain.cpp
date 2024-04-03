@@ -122,7 +122,8 @@ void SetupChangeNotifications()
 
     while (Context.running)
     {
-        if (WaitForMultipleObjects(2, handles, FALSE, INFINITE) == WAIT_OBJECT_0)
+        auto last_result = WaitForMultipleObjects(2, handles, FALSE, 100);
+        if (last_result == WAIT_OBJECT_0)
         {
             // Check if steamid ban list has been updated
             std::filesystem::file_time_type last_write_time = std::filesystem::last_write_time(std::filesystem::current_path() / "steam_bans.txt");
@@ -132,7 +133,7 @@ void SetupChangeNotifications()
                 last_write_time_old = last_write_time;
             }
         }
-        else
+        else if (last_result == WAIT_OBJECT_0 + 1)
         {
             break;
         }
@@ -225,7 +226,11 @@ BOOL APIENTRY DllMain
     else if (ul_reason_for_call == DLL_PROCESS_DETACH)
     {
         Context.running = false;
-        SignalObjectAndWait(Context.hUnloadEvent, Context.hUnloadEventAck, INFINITE, FALSE);
+
+        DWORD exitCode = 0;
+        GetExitCodeProcess(GetCurrentProcess(), &exitCode);
+        if (exitCode == STILL_ACTIVE)
+            SignalObjectAndWait(Context.hUnloadEvent, Context.hUnloadEventAck, INFINITE, FALSE);
 
         if (Context.vftable_SteamNetConnectionStatusChanged && oSteamNetConnectionStatusChanged)
         {
