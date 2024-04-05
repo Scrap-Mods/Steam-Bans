@@ -1,5 +1,8 @@
 #pragma once
 
+#pragma comment(lib, "Ws2_32.Lib")
+#pragma comment(lib, "Crypt32.Lib")
+
 /*  If defined, the following flags inhibit definition
  *     of the indicated items.
  *
