@@ -26,10 +26,16 @@
     <ClInclude Include="src\CSteamBans.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ISteamBans.hpp">
+    <ClInclude Include="src\VFTableHook.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\VFTableHook.hpp">
+    <ClInclude Include="src\CSteamNetworkingBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CUtlMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shared\ISteamBans.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

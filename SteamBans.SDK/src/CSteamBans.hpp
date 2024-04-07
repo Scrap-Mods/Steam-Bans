@@ -4,6 +4,8 @@
 #include "shared/ISteamBans.hpp"
 #include "VFTableHook.hpp"
 #include "steam_include.hpp"
+#include "CUtlMemory.h"
+
 
 #include <map>
 #include <string>
@@ -43,8 +45,9 @@ public:
     bool Attach() override;
     bool Detach() override;
 
-    std::unordered_map<std::uint64_t, HSteamNetConnection> GetConnections() const override;
+    const std::unordered_map<std::uint64_t, HSteamNetConnection>& GetConnections() const override;
 private:
+    void UpdateConnections();
 
     std::string m_steamWebApiKey;
 
@@ -61,6 +64,9 @@ private:
 
     using pFnGetCallbackMap = std::map<std::uint32_t, void*>*(*)(void);
     const std::map<std::uint32_t, void*>* m_callbackMap;
+    CUtlMemory* m_connections;
+    std::uint64_t m_localSteamID;
+    std::unordered_map<std::uint64_t, HSteamNetConnection> m_connectionMap;
 
     static void onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNetConnectionStatusChangedCallback_t* pParam);
     VFTableHook<decltype(onSteamNetConnectionStatusChanged)*> m_connStatusChangedHook;
@@ -74,3 +80,22 @@ private:
 };
 
 ISteamBans* SteamBans();
+
+template <class T>
+std::uintptr_t SeeBits(T func)
+{
+    union
+    {
+        T ptr;
+        std::uintptr_t i;
+    };
+    ptr = func;
+
+    return i;
+}
+
+template <typename T >
+struct Identity
+{
+    const T& operator()(const T& x) const { return x; }
+};

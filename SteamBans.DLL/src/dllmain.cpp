@@ -1,5 +1,6 @@
 #include "ISteamBans.hpp"
 #include "windows_include.hpp"
+#include "steam_include.hpp"
 
 #pragma comment(lib, "SteamBans.SDK.lib")
 
@@ -18,7 +19,13 @@ void main(HMODULE hModule)
     {
         pSteamBans->SetGlobalAccess(ISteamBans::AccessType::Deny);
 
-        Sleep(20 * 1000);
+        const auto& connections = pSteamBans->GetConnections();
+        for (const auto& [sid, connection] : connections)
+        {
+            SteamNetworkingSockets()->CloseConnection(connection, 0, "Banned", true);
+        }
+
+        Sleep(5 * 1000);
 
         pSteamBans->Detach();
     }

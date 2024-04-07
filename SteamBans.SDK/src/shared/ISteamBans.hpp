@@ -48,7 +48,7 @@ public:
     virtual bool Attach() = 0;
     virtual bool Detach() = 0;
 
-    virtual std::unordered_map<std::uint64_t, HSteamNetConnection> GetConnections() const = 0;
+    virtual const std::unordered_map<std::uint64_t, HSteamNetConnection>& GetConnections() const = 0;
 
 protected:
     virtual ~ISteamBans() = default;

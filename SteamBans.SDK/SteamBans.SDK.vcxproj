@@ -32,7 +32,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\CSteamBans.hpp" />
-    <ClInclude Include="src\ISteamBans.hpp" />
+    <ClInclude Include="src\CSteamNetworkingBase.h" />
+    <ClInclude Include="src\CUtlMemory.h" />
+    <ClInclude Include="src\shared\ISteamBans.hpp" />
     <ClInclude Include="src\VFTableHook.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -109,19 +111,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ExternalIncludePath>$(ProjectDir)include\;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>$(ProjectDir)lib\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)shared\lib\;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)src\;$(SourcePath)</SourcePath>
     <IncludePath>$(ProjectDir)src\;$(SolutionDir)shared\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ExternalIncludePath>$(ProjectDir)include\;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>$(ProjectDir)lib\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)shared\lib\;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)src\;$(SourcePath)</SourcePath>
     <IncludePath>$(ProjectDir)src\;$(SolutionDir)shared\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ExternalIncludePath>$(ProjectDir)include\;$(ExternalIncludePath)</ExternalIncludePath>
-    <LibraryPath>$(ProjectDir)lib\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)shared\lib\;$(LibraryPath)</LibraryPath>
     <SourcePath>$(ProjectDir)src\;$(SourcePath)</SourcePath>
     <IncludePath>$(ProjectDir)src\;$(SolutionDir)shared\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
@@ -192,7 +194,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;STEAMBANSSDK_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -233,7 +235,7 @@ XCOPY "$(SolutionDir)$(IntDir)$(TargetName).lib" "$(SolutionDir)shared\lib" /E /
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExternalWarningLevel>Level4</ExternalWarningLevel>
@@ -269,7 +271,7 @@ XCOPY "$(SolutionDir)$(IntDir)$(TargetName).lib" "$(SolutionDir)shared\lib" /E /
       <StringPooling>true</StringPooling>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExternalWarningLevel>Level4</ExternalWarningLevel>

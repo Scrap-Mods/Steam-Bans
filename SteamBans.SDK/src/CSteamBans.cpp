@@ -4,6 +4,7 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
+
 using json = nlohmann::json;
 
 ISteamBans* SteamBans()
@@ -22,6 +23,9 @@ CSteamBans::CSteamBans() :
     , m_friendsAskCallback(nullptr)
     , m_blockedAskCallback(nullptr)
     , m_callbackMap(nullptr)
+    , m_connections(nullptr)
+    , m_localSteamID(0)
+    , m_connectionMap()
     , m_connStatusChangedHook()
     , m_isAttached(false)
     , m_globalAccess(AccessType::Default)
@@ -167,6 +171,30 @@ bool CSteamBans::Attach()
     m_connStatusChangedHook.Hook(pvftable, 1, CSteamBans::onSteamNetConnectionStatusChanged);
     // End: Hooking SteamNetConnectionStatusChangedCallback_t callback
 
+    // Begin: Hooking g_mapConnections
+    std::uintptr_t addrMapConnections = 0;
+
+    try // Switch to __try/__except if doesn't work
+    {
+        const std::uintptr_t* pvftable = *reinterpret_cast<std::uintptr_t***>(SteamNetworkingSockets())[1];
+        addrMapConnections = pvftable[0xE];
+        addrMapConnections = follow_jmp(addrMapConnections + 0x2A);
+        addrMapConnections = follow_jmp(addrMapConnections + 0x91);
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    std::unordered_map <std::uint64_t, std::uint32_t> g_mapConnections;
+
+    m_connections = reinterpret_cast<CUtlMemory*>(addrMapConnections);
+    if (m_connections == nullptr)
+        return false;
+
+    UpdateConnections();
+    // End: Hooking g_mapConnections
+
     m_isAttached = true;
 
     return true;
@@ -183,10 +211,36 @@ bool CSteamBans::Detach()
     return true;
 }
 
-std::unordered_map<std::uint64_t, HSteamNetConnection> CSteamBans::GetConnections() const
+const std::unordered_map<std::uint64_t, HSteamNetConnection>& CSteamBans::GetConnections() const
 {
     // Get active connections
-    return {};
+    return m_connectionMap;
+}
+
+void CSteamBans::UpdateConnections()
+{
+    if (m_connections == nullptr)
+        return;
+
+    m_connectionMap.clear();
+
+    for (std::int32_t i = 0; i < m_connections->m_nCapacity; i++)
+    {
+        if (m_connections->m_pData[i].m_pElement == nullptr)
+            continue;
+
+        const std::uint64_t remoteSteamID = m_connections->m_pData[i].m_pElement->m_identityRemote;
+        const std::uint64_t localSteamID = m_connections->m_pData[i].m_pElement->m_identityLocal;
+        const std::uint32_t connection = m_connections->m_pData[i].m_pElement->m_hConnectionSelf;
+
+        if (m_localSteamID == 0)
+            m_localSteamID = localSteamID;
+
+        if (localSteamID == remoteSteamID)
+            continue;
+
+        m_connectionMap[remoteSteamID] = connection;
+    }
 }
 
 std::uintptr_t CSteamBans::follow_jmp(const std::uintptr_t& address) const
@@ -198,7 +252,8 @@ std::uintptr_t CSteamBans::follow_jmp(const std::uintptr_t& address) const
 // Main logic for preventing connections
 void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNetConnectionStatusChangedCallback_t* pParam)
 {
-    CSteamBans const* steamBans = static_cast<CSteamBans*>(SteamBans());
+    CSteamBans* steamBans = static_cast<CSteamBans*>(SteamBans());
+    steamBans->UpdateConnections();
     const std::uint64_t connectionSteamID = pParam->m_info.m_identityRemote.GetSteamID64();
     AccessType access = steamBans->GetGlobalAccess();
     
