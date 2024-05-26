@@ -6,9 +6,17 @@
 
 extern "C" __declspec(dllimport) ISteamBans * CreateSteamBansInterface();
 
+ISteamBans* pSteamBans = nullptr;
+
+void Ban(const std::uint64_t& steamid)
+{
+    pSteamBans->SetUserAccess(steamid, ISteamBans::AccessType::Deny);
+    SteamNetworkingSockets()->CloseConnection(pSteamBans->GetConnections().at(steamid), 0, "Banned", true);
+}
+
 void main(HMODULE hModule)
 {
-    ISteamBans* pSteamBans = CreateSteamBansInterface();
+    pSteamBans = CreateSteamBansInterface();
     if (pSteamBans == NULL)
     {
         FreeLibraryAndExitThread(hModule, 0);
@@ -22,7 +30,7 @@ void main(HMODULE hModule)
         const auto& connections = pSteamBans->GetConnections();
         for (const auto& [sid, connection] : connections)
         {
-            SteamNetworkingSockets()->CloseConnection(connection, 0, "Banned", true);
+            Ban(sid);
         }
 
         Sleep(5 * 1000);
