@@ -4,9 +4,9 @@
 
 #pragma comment(lib, "SteamBans.SDK.lib")
 
-extern "C" __declspec(dllimport) ISteamBans * CreateSteamBansInterface();
-
 ISteamBans* pSteamBans = nullptr;
+
+extern "C" __declspec(dllimport) ISteamBans* CreateSteamBansInterface();
 
 void Ban(const std::uint64_t& steamid)
 {

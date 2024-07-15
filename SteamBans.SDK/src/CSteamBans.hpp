@@ -22,9 +22,6 @@ public:
     void SetUserAccess(const std::uint64_t& steamid, const AccessType& access) override;
     AccessType GetUserAcccess(const std::uint64_t& steamid) const override;
 
-    void SetGroupAccess(const std::uint64_t& groupid, const AccessType& access) override;
-    AccessType GetGroupAccess(const std::uint64_t& groupid) const override;
-
     void SetFriendsAccess(const AccessType& access) override;
     AccessType GetFriendsAccess() const override;
 
@@ -32,15 +29,11 @@ public:
     AccessType GetBlockedAccess() const override;
 
     const std::unordered_map<std::uint64_t, AccessType>& GetUserAccessList() const override;
-    const std::unordered_map<std::uint64_t, AccessType>& GetGroupAccessList() const override;
 
-    void SetSteamWebApiKey(const std::string& key) override;
-
-    void SetGlobalAskCallback(std::function<AccessType(const std::uint64_t&)> callback) override;
-    void SetUserAskCallback(std::function<AccessType(const std::uint64_t&)> callback) override;
-    void SetGroupAskCallback(std::function<AccessType(const std::uint64_t&)> callback) override;
-    void SetFriendsAskCallback(std::function<AccessType(const std::uint64_t&)> callback) override;
-    void SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&)> callback) override;
+    void SetGlobalAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) override;
+    void SetUserAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) override;
+    void SetFriendsAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) override;
+    void SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) override;
 
     bool Attach() override;
     bool Detach() override;
@@ -49,16 +42,12 @@ public:
 private:
     void UpdateConnections();
 
-    std::string m_steamWebApiKey;
-
     std::unordered_map<std::uint64_t, AccessType> m_userAccess;
-    std::unordered_map<std::uint64_t, AccessType> m_groupAccess;
 
-    std::function<AccessType(const std::uint64_t&)> m_globalAskCallback;
-    std::function<AccessType(const std::uint64_t&)> m_userAskCallback;
-    std::function<AccessType(const std::uint64_t&)> m_groupAskCallback;
-    std::function<AccessType(const std::uint64_t&)> m_friendsAskCallback;
-    std::function<AccessType(const std::uint64_t&)> m_blockedAskCallback;
+    std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> m_globalAskCallback;
+    std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> m_userAskCallback;
+    std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> m_friendsAskCallback;
+    std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> m_blockedAskCallback;
 
     std::uintptr_t follow_jmp(const std::uintptr_t& address) const;
 

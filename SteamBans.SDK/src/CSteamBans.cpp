@@ -14,12 +14,9 @@ ISteamBans* SteamBans()
 }
 
 CSteamBans::CSteamBans() :
-    m_steamWebApiKey("")
-    , m_userAccess()
-    , m_groupAccess()
+    m_userAccess()
     , m_globalAskCallback(nullptr)
     , m_userAskCallback(nullptr)
-    , m_groupAskCallback(nullptr)
     , m_friendsAskCallback(nullptr)
     , m_blockedAskCallback(nullptr)
     , m_callbackMap(nullptr)
@@ -55,16 +52,6 @@ CSteamBans::AccessType CSteamBans::GetUserAcccess(const std::uint64_t& steamid) 
     return m_userAccess.find(steamid) != m_userAccess.end() ? m_userAccess.at(steamid) : AccessType::Default;
 }
 
-void CSteamBans::SetGroupAccess(const std::uint64_t& groupid, const AccessType& access)
-{
-    m_groupAccess[groupid] = access;
-}
-
-CSteamBans::AccessType CSteamBans::GetGroupAccess(const std::uint64_t& groupid) const
-{
-    return m_groupAccess.find(groupid) != m_groupAccess.end() ? m_groupAccess.at(groupid) : AccessType::Default;
-}
-
 void CSteamBans::SetFriendsAccess(const AccessType& access)
 {
     m_friendsAccess = access;
@@ -90,37 +77,22 @@ const std::unordered_map<std::uint64_t, CSteamBans::AccessType>& CSteamBans::Get
     return m_userAccess;
 }
 
-const std::unordered_map<std::uint64_t, CSteamBans::AccessType>& CSteamBans::GetGroupAccessList() const
-{
-    return m_groupAccess;
-}
-
-void CSteamBans::SetSteamWebApiKey(const std::string& key)
-{
-    m_steamWebApiKey = key;
-}
-
-void CSteamBans::SetGlobalAskCallback(std::function<AccessType(const std::uint64_t&)> callback)
+void CSteamBans::SetGlobalAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback)
 {
     m_globalAskCallback = callback;
 }
 
-void CSteamBans::SetUserAskCallback(std::function<AccessType(const std::uint64_t&)> callback)
+void CSteamBans::SetUserAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback)
 {
     m_userAskCallback = callback;
 }
 
-void CSteamBans::SetGroupAskCallback(std::function<AccessType(const std::uint64_t&)> callback)
-{
-    m_groupAskCallback = callback;
-}
-
-void CSteamBans::SetFriendsAskCallback(std::function<AccessType(const std::uint64_t&)> callback)
+void CSteamBans::SetFriendsAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback)
 {
     m_friendsAskCallback = callback;
 }
 
-void CSteamBans::SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&)> callback)
+void CSteamBans::SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback)
 {
     m_blockedAskCallback = callback;
 }
@@ -255,49 +227,9 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
     CSteamBans* steamBans = static_cast<CSteamBans*>(SteamBans());
     steamBans->UpdateConnections();
     const std::uint64_t connectionSteamID = pParam->m_info.m_identityRemote.GetSteamID64();
-    AccessType access = steamBans->GetGlobalAccess();
     
-    // Handle global access
-    if (access != AccessType::Default)
-    {
-        switch (access)
-        {
-            case AccessType::Deny:
-            {
-                SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
-                return;
-            }
-            case AccessType::Allow:
-            {
-                return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
-            }
-            case AccessType::Ask:
-            {
-                if (steamBans->m_globalAskCallback != nullptr)
-                {
-                    access = steamBans->m_globalAskCallback(connectionSteamID);
-                }
-                else
-                {
-                    access = AccessType::Allow;
-                }
-
-                if (access == AccessType::Deny)
-                {
-                    SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
-                    return;
-                }
-                else
-                {
-                    return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
-                }
-            }
-            case AccessType::Default: {}
-        }
-    }
-
     // Handle user access
-    access = steamBans->GetUserAcccess(connectionSteamID);
+    AccessType access = steamBans->GetUserAcccess(connectionSteamID);
     if (access != AccessType::Default)
     {
         switch (access)
@@ -315,7 +247,7 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
             {
                 if (steamBans->m_userAskCallback != nullptr)
                 {
-                    access = steamBans->m_userAskCallback(connectionSteamID);
+                    access = steamBans->m_userAskCallback(connectionSteamID, ConnState(pParam->m_eOldState), ConnState(pParam->m_info.m_eState));
                 }
                 else
                 {
@@ -333,67 +265,6 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
                 }
             }
             case AccessType::Default: {}
-        }
-    }
-
-    // Handle group access, needs Steam Web API key & their profile to be visible
-    if (!steamBans->m_steamWebApiKey.empty())
-    {
-        cpr::Response r = cpr::Get(
-            cpr::Url("https://api.steampowered.com/ISteamUser/GetUserGroupList/v1/"),
-            cpr::Parameters{ cpr::Parameter("key", steamBans->m_steamWebApiKey), cpr::Parameter("steamid", std::to_string(connectionSteamID)) }
-        );
-
-        if (r.status_code == 200)
-        {
-            const json j = json::parse(r.text);
-            if (j.contains("response") && j["response"]["success"])
-            {
-                for (const auto& group : j["response"]["groups"])
-                {
-                    const std::string szgroupID = group["gid"];
-                    const std::uint64_t groupID = std::stoull(szgroupID);
-
-                    access = steamBans->GetGroupAccess(groupID);
-                    if (access != AccessType::Default)
-                    {
-                        switch (access)
-                        {
-                            case AccessType::Deny:
-                            {
-                                SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
-                                return;
-                            }
-                            case AccessType::Allow:
-                            {
-                                return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
-                            }
-                            case AccessType::Ask:
-                            {
-                                if (steamBans->m_groupAskCallback != nullptr)
-                                {
-                                    access = steamBans->m_groupAskCallback(groupID);
-                                }
-                                else
-                                {
-                                    access = AccessType::Allow;
-                                }
-
-                                if (access == AccessType::Deny)
-                                {
-                                    SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
-                                    return;
-                                }
-                                else
-                                {
-                                    return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
-                                }
-                            }
-                            case AccessType::Default: {}
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -417,7 +288,7 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
             {
                 if (steamBans->m_friendsAskCallback != nullptr)
                 {
-                    access = steamBans->m_friendsAskCallback(connectionSteamID);
+                    access = steamBans->m_friendsAskCallback(connectionSteamID, ConnState(pParam->m_eOldState), ConnState(pParam->m_info.m_eState));
                 }
                 else
                 {
@@ -458,7 +329,7 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
             {
                 if (steamBans->m_blockedAskCallback != nullptr)
                 {
-                    access = steamBans->m_blockedAskCallback(connectionSteamID);
+                    access = steamBans->m_blockedAskCallback(connectionSteamID, ConnState(pParam->m_eOldState), ConnState(pParam->m_info.m_eState));
                 }
                 else
                 {
@@ -478,6 +349,47 @@ void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNet
             case AccessType::Default: {}
         }
     }
+
+    // Handle global access
+    access = steamBans->GetGlobalAccess();
+    if (access != AccessType::Default)
+    {
+        switch (access)
+        {
+        case AccessType::Deny:
+        {
+            SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
+            return;
+        }
+        case AccessType::Allow:
+        {
+            return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
+        }
+        case AccessType::Ask:
+        {
+            if (steamBans->m_globalAskCallback != nullptr)
+            {
+                access = steamBans->m_globalAskCallback(connectionSteamID, ConnState(pParam->m_eOldState), ConnState(pParam->m_info.m_eState));
+            }
+            else
+            {
+                access = AccessType::Allow;
+            }
+
+            if (access == AccessType::Deny)
+            {
+                SteamNetworkingSockets()->CloseConnection(pParam->m_hConn, 0, nullptr, false);
+                return;
+            }
+            else
+            {
+                return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
+            }
+        }
+        case AccessType::Default: {}
+        }
+    }
+
 
     // Allow connection by default
     return steamBans->m_connStatusChangedHook.GetOriginalFunction()(self, pParam);
