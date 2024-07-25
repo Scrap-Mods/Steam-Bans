@@ -224,7 +224,7 @@ std::uintptr_t CSteamBans::follow_jmp(const std::uintptr_t& address) const
 // Main logic for preventing connections
 void CSteamBans::onSteamNetConnectionStatusChanged(std::uintptr_t self, SteamNetConnectionStatusChangedCallback_t* pParam)
 {
-    CSteamBans* steamBans = static_cast<CSteamBans*>(SteamBans());
+    CSteamBans* steamBans = reinterpret_cast<CSteamBans*>(SteamBans());
     steamBans->UpdateConnections();
     const std::uint64_t connectionSteamID = pParam->m_info.m_identityRemote.GetSteamID64();
     

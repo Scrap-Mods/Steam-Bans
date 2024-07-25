@@ -351,6 +351,43 @@ namespace luabans
         return 1;
     }
 
+    int luabans_SendMessageToConnection(lua_State* L) {
+        luabans_checkarglen(L, 4);
+
+        const ISteamBans* pSteamBans = luabans_checkisteambans(L, 1);
+        const std::uint64_t steamid = luabans_checksteamid64(L, 2);
+        if (!lua_istable(L, 3)) luaL_argerror(L, 3, "table expected");
+        const int sendflags = luaL_checkinteger(L, 4);
+
+        const std::size_t tableLen = lua_objlen(L, 3);
+        std::vector<std::uint8_t> packetData(tableLen);
+        for (int i = 1; i <= tableLen; i++)
+        {
+            lua_rawgeti(L, 3, i);
+            if (lua_type(L, -1) != LUA_TNUMBER)
+            {
+                lua_pop(L, 1);
+                lua_pushboolean(L, 0);
+                return 1;
+            }
+
+            packetData[i-1] = (std::uint8_t)lua_tointeger(L, -1);
+            lua_pop(L, 1);
+        }
+
+        const auto& connections = pSteamBans->GetConnections();
+        auto connection = connections.find(steamid);
+        if (connection == connections.end())
+        {
+            lua_pushboolean(L, 0);
+            return 1;
+        }
+        
+        SteamNetworkingSockets()->SendMessageToConnection(connection->second, packetData.data(), packetData.size(), sendflags, nullptr);
+        lua_pushboolean(L, 1);
+        return 1;
+    }
+
     // bool steambans:Attach()
     int luabans_Attach(lua_State* L) {
         luabans_checkarglen(L, 1);
@@ -377,59 +414,38 @@ namespace luabans
         return 1;
     }
 
+    const luaL_Reg MetaISteamBans[] = {
+        { "SetGlobalAccess", luabans_SetGlobalAccess },
+        { "GetGlobalAccess", luabans_GetGlobalAccess },
+        { "SetUserAccess", luabans_SetUserAccess },
+        { "GetUserAccess", luabans_GetUserAccess },
+        { "SetFriendsAccess", luabans_SetFriendsAccess },
+        { "GetFriendsAccess", luabans_GetFriendsAccess },
+        { "SetBlockedAccess", luabans_SetBlockedAccess },
+        { "GetBlockedAccess", luabans_GetBlockedAccess },
+        { "GetUserAccessList", luabans_GetUserAccessList },
+        { "SetGlobalAskCallback", luabans_SetGlobalAskCallback },
+        { "SetUserAskCallback", luabans_SetUserAskCallback },
+        { "SetFriendsAskCallback", luabans_SetFriendsAskCallback },
+        { "SetBlockedAskCallback", luabans_SetBlockedAskCallback },
+        { "GetConnected", luabans_GetConnected },
+        { "CloseConnection", luabans_CloseConnection },
+        { "SendMessageToConnection", luabans_SendMessageToConnection },
+        { "Attach", luabans_Attach },
+        { "Detach", luabans_Detach },
+        {NULL, NULL}
+    };
+
     int luabans_getInterface(lua_State* L) {
+        
+
         ISteamBans** ppSteamBans = (ISteamBans**)lua_newuserdata(L, 8);
         *ppSteamBans = CreateSteamBansInterface();
 
         luaL_newmetatable(L, "ISteamBans");
-        
 
-        lua_createtable(L, 0, 17);
-
-        lua_pushcclosure(L, luabans_SetGlobalAccess, 0);
-        lua_setfield(L, -2, "SetGlobalAccess");
-        lua_pushcclosure(L, luabans_GetGlobalAccess, 0);
-        lua_setfield(L, -2, "GetGlobalAccess");
-
-        lua_pushcclosure(L, luabans_SetUserAccess, 0);
-        lua_setfield(L, -2, "SetUserAccess");
-        lua_pushcclosure(L, luabans_GetUserAccess, 0);
-        lua_setfield(L, -2, "GetUserAccess");
-
-        lua_pushcclosure(L, luabans_SetFriendsAccess, 0);
-        lua_setfield(L, -2, "SetFriendsAccess");
-        lua_pushcclosure(L, luabans_GetFriendsAccess, 0);
-        lua_setfield(L, -2, "GetFriendsAccess");
-
-        lua_pushcclosure(L, luabans_SetBlockedAccess, 0);
-        lua_setfield(L, -2, "SetBlockedAccess");
-        lua_pushcclosure(L, luabans_GetBlockedAccess, 0);
-        lua_setfield(L, -2, "GetBlockedAccess");
-
-        lua_pushcclosure(L, luabans_GetUserAccessList, 0);
-        lua_setfield(L, -2, "GetUserAccessList");
-
-        lua_pushcclosure(L, luabans_SetGlobalAskCallback, 0);
-        lua_setfield(L, -2, "SetGlobalAskCallback");
-        lua_pushcclosure(L, luabans_SetUserAskCallback, 0);
-        lua_setfield(L, -2, "SetUserAskCallback");
-        lua_pushcclosure(L, luabans_SetFriendsAskCallback, 0);
-        lua_setfield(L, -2, "SetFriendsAskCallback");
-        lua_pushcclosure(L, luabans_SetBlockedAskCallback, 0);
-        lua_setfield(L, -2, "SetBlockedAskCallback");
-
-        lua_pushcclosure(L, luabans_GetConnected, 0);
-        lua_setfield(L, -2, "GetConnected");
-
-        lua_pushcclosure(L, luabans_CloseConnection, 0);
-        lua_setfield(L, -2, "CloseConnection");
-
-        lua_pushcclosure(L, luabans_Attach, 0);
-        lua_setfield(L, -2, "Attach");
-        lua_pushcclosure(L, luabans_Detach, 0);
-        lua_setfield(L, -2, "Detach");
-
-
+        lua_createtable(L, 0, 18);
+        luaL_register(L, "", &MetaISteamBans[0]);
         lua_setfield(L, -2, "__index");
 
         lua_pushcclosure(L, luabans_Detach, 0);
