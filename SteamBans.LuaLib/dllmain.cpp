@@ -6,7 +6,6 @@
 #include <luajit/lua.hpp>
 
 #include <algorithm>
-#include <mutex>
 #include <cassert>
 
 extern "C" __declspec(dllimport) ISteamBans* CreateSteamBansInterface();
