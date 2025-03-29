@@ -148,8 +148,8 @@ bool CSteamBans::Attach()
 
     try // Switch to __try/__except if doesn't work
     {
-        const std::uintptr_t* pvftable = *reinterpret_cast<std::uintptr_t***>(SteamNetworkingSockets())[1];
-        addrMapConnections = pvftable[0xE];
+        const std::uintptr_t* pvftable2 = *reinterpret_cast<std::uintptr_t***>(SteamNetworkingSockets())[1];
+        addrMapConnections = pvftable2[0xE];
         addrMapConnections = follow_jmp(addrMapConnections + 0x2A);
         addrMapConnections = follow_jmp(addrMapConnections + 0x91);
     }
