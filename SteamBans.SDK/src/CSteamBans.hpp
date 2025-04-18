@@ -36,6 +36,7 @@ public:
     void SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) override;
 
     bool Attach() override;
+    bool IsAttached() override;
     bool Detach() override;
 
     const std::unordered_map<std::uint64_t, HSteamNetConnection>& GetConnections() const override;

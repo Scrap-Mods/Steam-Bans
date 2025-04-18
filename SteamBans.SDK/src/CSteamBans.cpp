@@ -151,7 +151,7 @@ bool CSteamBans::Attach()
         const std::uintptr_t* pvftable = *reinterpret_cast<std::uintptr_t***>(SteamNetworkingSockets())[1];
         addrMapConnections = pvftable[0xE];
         addrMapConnections = follow_jmp(addrMapConnections + 0x2A);
-        addrMapConnections = follow_jmp(addrMapConnections + 0x91);
+        addrMapConnections = follow_jmp(addrMapConnections + 0x9F + 2);
     }
     catch (...)
     {
@@ -170,6 +170,11 @@ bool CSteamBans::Attach()
     m_isAttached = true;
 
     return true;
+}
+
+bool CSteamBans::IsAttached()
+{
+    return m_isAttached;
 }
 
 bool CSteamBans::Detach()

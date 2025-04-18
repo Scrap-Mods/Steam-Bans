@@ -57,6 +57,7 @@ public:
     virtual void SetBlockedAskCallback(std::function<AccessType(const std::uint64_t&, const ConnState, const ConnState)> callback) = 0;
 
     virtual bool Attach() = 0;
+    virtual bool IsAttached() = 0;
     virtual bool Detach() = 0;
 
     virtual const std::unordered_map<std::uint64_t, HSteamNetConnection>& GetConnections() const = 0;
