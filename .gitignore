@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # Vcpkg
 vcpkg_installed/
+
+/shared/lib/SteamBans.SDK.lib

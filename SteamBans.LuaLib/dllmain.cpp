@@ -400,6 +400,13 @@ namespace luabans
         return 1;
     }
 
+    // bool steambans:IsAttached()
+    int luabans_IsAttached(lua_State* L) {
+        ISteamBans* pSteamBans = luabans_checkisteambans(L, 1);
+        lua_pushboolean(L, pSteamBans->IsAttached());
+        return 1;
+    }
+
     // bool steambans:Detach()
     int luabans_Detach(lua_State* L) {
         luabans_checkarglen(L, 1);
@@ -431,6 +438,7 @@ namespace luabans
         { "CloseConnection", luabans_CloseConnection },
         { "SendMessageToConnection", luabans_SendMessageToConnection },
         { "Attach", luabans_Attach },
+        { "IsAttached", luabans_IsAttached },
         { "Detach", luabans_Detach },
         {NULL, NULL}
     };
@@ -443,8 +451,8 @@ namespace luabans
 
         luaL_newmetatable(L, "ISteamBans");
 
-        lua_createtable(L, 0, 18);
-        luaL_register(L, "", &MetaISteamBans[0]);
+        lua_createtable(L, 0, 19);
+        luaL_register(L, NULL, &MetaISteamBans[0]);
         lua_setfield(L, -2, "__index");
 
         lua_pushcclosure(L, luabans_Detach, 0);
