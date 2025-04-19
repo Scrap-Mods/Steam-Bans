@@ -265,7 +265,7 @@ namespace luabans
         lua_pushvalue(L, 2);
         lua_setfield(L, -2, "user");
 
-        pSteamBans->SetGlobalAskCallback(std::bind(DoAskCallback, L, "user", _1, _2, _3));
+        pSteamBans->SetUserAskCallback(std::bind(DoAskCallback, L, "user", _1, _2, _3));
 
         lua_pop(L, 1);
         lua_pushnil(L);
@@ -284,7 +284,7 @@ namespace luabans
         lua_pushvalue(L, 2);
         lua_setfield(L, -2, "friends");
 
-        pSteamBans->SetGlobalAskCallback(std::bind(DoAskCallback, L, "friends", _1, _2, _3));
+        pSteamBans->SetFriendsAskCallback(std::bind(DoAskCallback, L, "friends", _1, _2, _3));
 
         lua_pop(L, 1);
         lua_pushnil(L);
@@ -303,7 +303,7 @@ namespace luabans
         lua_pushvalue(L, 2);
         lua_setfield(L, -2, "blocked");
 
-        pSteamBans->SetGlobalAskCallback(std::bind(DoAskCallback, L, "blocked", _1, _2, _3));
+        pSteamBans->SetBlockedAskCallback(std::bind(DoAskCallback, L, "blocked", _1, _2, _3));
 
         lua_pop(L, 1);
         lua_pushnil(L);
